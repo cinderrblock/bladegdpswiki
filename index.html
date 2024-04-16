@@ -36,7 +36,7 @@
     
     <article>
 <h1>File Search</h1>
-<input type="text" id="searchInput" placeholder="Enter search term">
+<input type="text" id="searchInput" placeholder="Enter file name">
 <button onclick="searchFiles()">Search</button>
 <textarea id="errorDisplay" rows="5" style="width: 100%; margin-top: 10px;" readonly></textarea>
 
@@ -46,44 +46,56 @@
         const errorDisplay = document.getElementById('errorDisplay');
         errorDisplay.value = ''; // Clear previous errors
 
-        // Use Fetch API to fetch file names
-        fetch('./file-list.json')
+        // Fetch list of files in the current directory
+        fetch('./')
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Failed to fetch file list');
+                    throw new Error('Failed to fetch directory listing');
                 }
-                return response.json();
+                return response.text();
             })
-            .then(fileList => {
+            .then(htmlDirectoryListing => {
+                // Extract HTML file names from directory listing
+                const fileNames = extractHtmlFileNames(htmlDirectoryListing);
+
+                if (fileNames.length === 0) {
+                    errorDisplay.value = 'No HTML files found in this directory.';
+                    return;
+                }
+
                 let matchFound = false;
-                fileList.forEach(fileName => {
-                    fetch(fileName)
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error(`Failed to fetch ${fileName}`);
-                            }
-                            return response.text();
-                        })
-                        .then(htmlContent => {
-                            if (htmlContent.toLowerCase().includes(searchInput)) {
-                                matchFound = true;
-                                window.location.href = fileName; // Redirect to matched file
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error fetching or processing file:', error);
-                            errorDisplay.value += `Error: ${error.message}\n`;
-                        });
+
+                // Check for matching file name
+                fileNames.forEach(fileName => {
+                    if (fileName.toLowerCase().includes(searchInput)) {
+                        matchFound = true;
+                        window.location.href = fileName; // Redirect to matched file
+                    }
                 });
 
                 if (!matchFound) {
-                    errorDisplay.value = 'No matching file found.';
+                    errorDisplay.value = 'No matching file name found.';
                 }
             })
             .catch(error => {
-                console.error('Error fetching file list:', error);
+                console.error('Error fetching directory listing:', error);
                 errorDisplay.value = `Error: ${error.message}`;
             });
+    }
+
+    function extractHtmlFileNames(directoryListing) {
+        // Regular expression to find links to HTML files in the directory listing
+        const htmlFileRegex = /<a href="([^"]+\.html?)"/gi;
+        const fileNames = [];
+        let match;
+
+        while ((match = htmlFileRegex.exec(directoryListing)) !== null) {
+            // Get the file name from the matched link
+            const fileName = match[1];
+            fileNames.push(fileName);
+        }
+
+        return fileNames;
     }
 </script>
 
