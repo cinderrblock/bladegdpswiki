@@ -35,18 +35,15 @@
     </header>
     
     <article>
-<h1>Search for an article!</h1>
+<h1>File Search</h1>
 <input type="text" id="searchInput" placeholder="Enter search term">
 <button onclick="searchFiles()">Search</button>
-<div id="searchResults"></div>
 <textarea id="errorDisplay" rows="5" style="width: 100%; margin-top: 10px;" readonly></textarea>
 
 <script>
     function searchFiles() {
         const searchInput = document.getElementById('searchInput').value.trim().toLowerCase();
-        const searchResultsDiv = document.getElementById('searchResults');
         const errorDisplay = document.getElementById('errorDisplay');
-        searchResultsDiv.innerHTML = ''; // Clear previous results
         errorDisplay.value = ''; // Clear previous errors
 
         // Use Fetch API to fetch file names
@@ -58,6 +55,7 @@
                 return response.json();
             })
             .then(fileList => {
+                let matchFound = false;
                 fileList.forEach(fileName => {
                     fetch(fileName)
                         .then(response => {
@@ -68,12 +66,8 @@
                         })
                         .then(htmlContent => {
                             if (htmlContent.toLowerCase().includes(searchInput)) {
-                                const resultLink = document.createElement('a');
-                                resultLink.href = fileName;
-                                resultLink.textContent = fileName;
-                                resultLink.setAttribute('target', '_blank');
-                                searchResultsDiv.appendChild(resultLink);
-                                searchResultsDiv.appendChild(document.createElement('br'));
+                                matchFound = true;
+                                window.location.href = fileName; // Redirect to matched file
                             }
                         })
                         .catch(error => {
@@ -81,6 +75,10 @@
                             errorDisplay.value += `Error: ${error.message}\n`;
                         });
                 });
+
+                if (!matchFound) {
+                    errorDisplay.value = 'No matching file found.';
+                }
             })
             .catch(error => {
                 console.error('Error fetching file list:', error);
@@ -88,6 +86,7 @@
             });
     }
 </script>
+
 
 
     </article>
