@@ -35,40 +35,60 @@
     </header>
     
     <article>
-    <h1>Search for an article!</h1>
-    <input type="text" id="searchInput" placeholder="Enter search term">
-    <button onclick="searchFiles()">Search</button>
-    <div id="searchResults"></div>
+<h1>Search for an article!</h1>
+<input type="text" id="searchInput" placeholder="Enter search term">
+<button onclick="searchFiles()">Search</button>
+<div id="searchResults"></div>
+<textarea id="errorDisplay" rows="5" style="width: 100%; margin-top: 10px;" readonly></textarea>
 
-    <script>
-        function searchFiles() {
-            const searchInput = document.getElementById('searchInput').value.trim().toLowerCase();
-            const searchResultsDiv = document.getElementById('searchResults');
-            searchResultsDiv.innerHTML = ''; // Clear previous results
+<script>
+    function searchFiles() {
+        const searchInput = document.getElementById('searchInput').value.trim().toLowerCase();
+        const searchResultsDiv = document.getElementById('searchResults');
+        const errorDisplay = document.getElementById('errorDisplay');
+        searchResultsDiv.innerHTML = ''; // Clear previous results
+        errorDisplay.value = ''; // Clear previous errors
 
-            // Use Fetch API to fetch file names
-            fetch('./file-list.json')
-                .then(response => response.json())
-                .then(fileList => {
-                    fileList.forEach(fileName => {
-                        fetch(fileName)
-                            .then(response => response.text())
-                            .then(htmlContent => {
-                                if (htmlContent.toLowerCase().includes(searchInput)) {
-                                    const resultLink = document.createElement('a');
-                                    resultLink.href = fileName;
-                                    resultLink.textContent = fileName;
-                                    resultLink.setAttribute('target', '_blank');
-                                    searchResultsDiv.appendChild(resultLink);
-                                    searchResultsDiv.appendChild(document.createElement('br'));
-                                }
-                            })
-                            .catch(error => console.error('Error fetching file:', error));
-                    });
-                })
-                .catch(error => console.error('Error fetching file list:', error));
-        }
-    </script>
+        // Use Fetch API to fetch file names
+        fetch('./file-list.json')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch file list');
+                }
+                return response.json();
+            })
+            .then(fileList => {
+                fileList.forEach(fileName => {
+                    fetch(fileName)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`Failed to fetch ${fileName}`);
+                            }
+                            return response.text();
+                        })
+                        .then(htmlContent => {
+                            if (htmlContent.toLowerCase().includes(searchInput)) {
+                                const resultLink = document.createElement('a');
+                                resultLink.href = fileName;
+                                resultLink.textContent = fileName;
+                                resultLink.setAttribute('target', '_blank');
+                                searchResultsDiv.appendChild(resultLink);
+                                searchResultsDiv.appendChild(document.createElement('br'));
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error fetching or processing file:', error);
+                            errorDisplay.value += `Error: ${error.message}\n`;
+                        });
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching file list:', error);
+                errorDisplay.value = `Error: ${error.message}`;
+            });
+    }
+</script>
+
 
     </article>
 
